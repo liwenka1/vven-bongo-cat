@@ -6,3 +6,12 @@ declare module "*.vue" {
   const component: DefineComponent<{}, {}, any>;
   export default component;
 }
+
+interface Window {
+  electron: {
+    ipcRenderer: {
+      on(channel: string, func: (...args: any[]) => void): void;
+      send(channel: string, ...args: any[]): void;
+    };
+  };
+}
