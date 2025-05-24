@@ -20,16 +20,17 @@ export default defineConfig({
     publicDir: resolve("src/renderer/public"),
     plugins: [vue(), tailwindcss()],
     optimizeDeps: {
-      include: ['pixi.js', 'pixi-live2d-display']
+      include: ["pixi.js", "pixi-live2d-display"]
     },
     build: {
       rollupOptions: {
-        external: ['live2d.min.js']
+        external: ["live2d.min.js"]
       }
     },
     server: {
       headers: {
-        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'"
+        "Content-Security-Policy":
+          "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'"
       }
     }
   }
