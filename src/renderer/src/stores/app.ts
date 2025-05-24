@@ -1,13 +1,15 @@
-import { defineStore } from 'pinia';
+import { defineStore } from "pinia";
+import type { WindowState } from "../composables/useWindowState";
 
-export const useAppStore = defineStore('app', {
+export const useAppStore = defineStore("app", {
   state: () => ({
     isMaximized: false,
-    version: '',
-    latestVersion: '',
+    version: "",
+    latestVersion: "",
     updateAvailable: false,
     updateProgress: 0,
     isUpdating: false,
+    windowState: {} as WindowState
   }),
   actions: {
     setMaximized(value: boolean) {
@@ -28,5 +30,16 @@ export const useAppStore = defineStore('app', {
     setIsUpdating(value: boolean) {
       this.isUpdating = value;
     },
-  },
-}); 
+    setWindowState(value: WindowState) {
+      this.windowState = value;
+    },
+    async $electron() {
+      return {
+        async init() {
+          // 这里可以从 electron store 或配置文件加载设置
+          return Promise.resolve();
+        }
+      };
+    }
+  }
+});

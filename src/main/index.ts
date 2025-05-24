@@ -1,9 +1,11 @@
-import { app, shell, BrowserWindow, ipcMain, screen } from "electron";
+import { app, shell, BrowserWindow, ipcMain, screen, nativeImage } from "electron";
 import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
-import icon from "../../resources/icon.png?asset";
+import iconPath from "../../resources/icon.png?asset";
 
 function createWindow(): void {
+  const icon = nativeImage.createFromPath(iconPath);
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 300, // Default size for the cat window
@@ -13,6 +15,7 @@ function createWindow(): void {
     transparent: true,
     autoHideMenuBar: true,
     alwaysOnTop: true,
+    icon,
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
       sandbox: false,
@@ -24,6 +27,17 @@ function createWindow(): void {
 
   mainWindow.on("ready-to-show", () => {
     mainWindow.show();
+  });
+
+  // 监听窗口移动和大小变化
+  mainWindow.on("move", () => {
+    const [x, y] = mainWindow.getPosition();
+    mainWindow.webContents.send("window-state-changed", { x, y });
+  });
+
+  mainWindow.on("resize", () => {
+    const [width, height] = mainWindow.getSize();
+    mainWindow.webContents.send("window-state-changed", { width, height });
   });
 
   // Handle external links
@@ -47,13 +61,17 @@ function createWindow(): void {
 
   ipcMain.handle("window:startDragging", () => {
     mainWindow.webContents.startDrag({
-      file: "",
-      icon: null
+      file: join(__dirname, "dummy.txt"),
+      icon: icon.resize({ width: 1, height: 1 })
     });
   });
 
   ipcMain.handle("window:setSize", (_, { width, height }) => {
     mainWindow.setSize(width, height);
+  });
+
+  ipcMain.handle("window:setPosition", (_, { x, y }) => {
+    mainWindow.setPosition(x, y);
   });
 
   ipcMain.handle("window:getSize", () => {

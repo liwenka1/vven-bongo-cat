@@ -1,14 +1,14 @@
-import { defineStore } from 'pinia';
+import { defineStore } from "pinia";
 
-export const useGeneralStore = defineStore('general', {
+export const useGeneralStore = defineStore("general", {
   state: () => ({
-    theme: 'light',
-    language: 'en',
+    theme: "light",
+    language: "en",
     autoStart: false,
-    autoUpdate: true,
+    autoUpdate: true
   }),
   actions: {
-    setTheme(value: 'light' | 'dark') {
+    setTheme(value: "light" | "dark") {
       this.theme = value;
     },
     setLanguage(value: string) {
@@ -19,6 +19,6 @@ export const useGeneralStore = defineStore('general', {
     },
     setAutoUpdate(value: boolean) {
       this.autoUpdate = value;
-    },
-  },
-}); 
+    }
+  }
+});

@@ -5,7 +5,8 @@
   "main": "./out/main/index.js",
   "packageManager": "pnpm@9.12.1",
   "scripts": {
-    "format": "prettier --write .",
+    "format": "prettier --write --end-of-line lf --single-quote false --trailing-comma none .",
+    "format:check": "prettier --check .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",

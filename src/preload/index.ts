@@ -9,6 +9,7 @@ const api = {
   setIgnoreMouse: (value: boolean) => ipcRenderer.invoke("window:setIgnoreMouse", value),
   startDragging: () => ipcRenderer.invoke("window:startDragging"),
   setWindowSize: (width: number, height: number) => ipcRenderer.invoke("window:setSize", { width, height }),
+  setWindowPosition: (x: number, y: number) => ipcRenderer.invoke("window:setPosition", { x, y }),
   getWindowSize: () => ipcRenderer.invoke("window:getSize"),
 
   // Monitor and cursor
