@@ -1,6 +1,7 @@
 import { resolve } from "path";
 import { defineConfig, externalizeDepsPlugin, bytecodePlugin } from "electron-vite";
 import vue from "@vitejs/plugin-vue";
+// @ts-ignore - TailwindCSS Vite plugin type resolution issue
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
