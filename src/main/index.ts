@@ -60,10 +60,9 @@ function createWindow(): void {
   });
 
   ipcMain.handle("window:startDragging", () => {
-    mainWindow.webContents.startDrag({
-      file: join(__dirname, "dummy.txt"),
-      icon: icon.resize({ width: 1, height: 1 })
-    });
+    // 在 Electron 中，窗口拖拽通常通过 CSS -webkit-app-region: drag 实现
+    // 这里不需要特殊处理，返回成功即可
+    return true;
   });
 
   ipcMain.handle("window:setSize", (_, { width, height }) => {
