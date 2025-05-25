@@ -1,8 +1,5 @@
 <script setup lang="ts">
-// import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow' // TAURI-SPECIFIC
-// import { message } from '@tauri-apps/plugin-dialog' // TAURI-SPECIFIC
 import { Space } from "ant-design-vue";
-// import { checkInputMonitoringPermission, requestInputMonitoringPermission } from 'tauri-plugin-macos-permissions-api' // TAURI-SPECIFIC
 import { onMounted, ref } from "vue";
 
 import ProList from "@/components/pro-list/index.vue";
@@ -12,32 +9,17 @@ import { isMac } from "@/utils/platform"; // Assuming this util will be copied
 const authorized = ref(false);
 
 onMounted(async () => {
-  if (!isMac) return; // Only run on macOS
-  // authorized.value = await checkInputMonitoringPermission() // TAURI-SPECIFIC
-  console.warn("TODO: Implement checkInputMonitoringPermission for Electron on macOS");
-  authorized.value = false; // Placeholder
+  if (!isMac) return;
 
-  if (authorized.value) return;
-
-  // const appWindow = getCurrentWebviewWindow() // TAURI-SPECIFIC
-  // await appWindow.setAlwaysOnTop(true) // TAURI-SPECIFIC
-
-  // await message('如果权限已开启，先选中后点击"-"按钮将其删除，再重新手动添加，并重启应用以确保权限生效。', { // TAURI-SPECIFIC
-  //   title: '输入监控权限',
-  //   okLabel: '前往开启',
-  //   kind: 'warning',
-  // })
-  console.warn("TODO: Implement permission request dialog for Electron on macOS");
-
-  // await appWindow.setAlwaysOnTop(false) // TAURI-SPECIFIC
-  // requestInputMonitoringPermission() // TAURI-SPECIFIC
-  console.warn("TODO: Implement requestInputMonitoringPermission for Electron on macOS");
+  // TODO: 实现 Electron macOS 权限检查
+  console.log("macOS 权限检查功能待实现");
+  authorized.value = false;
 });
 
 function handleRequestPermission() {
   if (!isMac) return;
-  // requestInputMonitoringPermission() // TAURI-SPECIFIC
-  console.warn("TODO: Implement requestInputMonitoringPermission for Electron on macOS");
+  // TODO: 实现 Electron macOS 权限请求
+  console.log("macOS 权限请求功能待实现");
 }
 </script>
 

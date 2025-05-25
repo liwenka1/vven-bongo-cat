@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart' // TAURI-SPECIFIC
 import { Switch } from "ant-design-vue";
 import { watch } from "vue";
 
@@ -14,14 +13,8 @@ const generalStore = useGeneralStore();
 watch(
   () => generalStore.autostart,
   async (value) => {
-    // const enabled = await isEnabled() // TAURI-SPECIFIC
-    // if (value && !enabled) {
-    //   return enable() // TAURI-SPECIFIC
-    // }
-    // if (!value && enabled) {
-    //   disable() // TAURI-SPECIFIC
-    // }
-    console.warn("TODO: Implement autostart for Electron", value);
+    // TODO: 实现 Electron 自启动功能
+    console.log("自启动设置:", value);
   },
   { immediate: true }
 );

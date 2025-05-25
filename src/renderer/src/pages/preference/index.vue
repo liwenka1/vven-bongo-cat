@@ -8,17 +8,15 @@ import General from "./components/general/index.vue";
 import Model from "./components/model/index.vue";
 
 import UpdateApp from "@/components/update-app/index.vue";
-// import { useTray } from '@/composables/useTray' // TAURI-SPECIFIC - Needs Electron equivalent for tray
 import { useAppStore } from "@/stores/app";
-import { isMac } from "@/utils/platform"; // Assuming this util will be copied
+import { isMac } from "@/utils/platform";
 
-// const { createTray } = useTray() // TAURI-SPECIFIC
 const appStore = useAppStore();
 const current = ref(0);
 
 onMounted(async () => {
-  // createTray() // TAURI-SPECIFIC
-  console.warn("TODO: Implement createTray for Electron");
+  // TODO: 实现系统托盘功能
+  console.log("应用偏好设置页面已加载");
 });
 
 const menus = [

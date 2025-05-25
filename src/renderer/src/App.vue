@@ -5,7 +5,7 @@ import isURL from "is-url";
 import { onMounted } from "vue";
 import { RouterView } from "vue-router";
 
-import { useAppListen } from "./composables/useTauriListen";
+import { useAppListen } from "./composables/useElectronListen";
 import { useThemeVars } from "./composables/useThemeVars";
 import { useWindowState } from "./composables/useWindowState";
 import { LISTEN_KEY } from "./constants";

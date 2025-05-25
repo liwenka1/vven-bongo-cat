@@ -1,25 +1,25 @@
-// import { invoke } from '@tauri-apps/api/core' // TAURI-SPECIFIC
-// import { emit } from '@tauri-apps/api/event' // TAURI-SPECIFIC
+// Electron 窗口管理工具
 
-// import { LISTEN_KEY } from '../constants' // Constants are available
-
-// For Electron, these functions will typically use ipcRenderer to communicate with the main process.
-
-type WindowLabel = "main" | "preference"; // This type can remain useful
-
-// const COMMAND = { // Tauri specific commands
-//   SHOW_WINDOW: 'plugin:custom-window|show_window',
-//   HIDE_WINDOW: 'plugin:custom-window|hide_window',
-// }
+type WindowLabel = "main" | "preference";
 
 export function showWindow(label?: WindowLabel) {
-  if (window.electron?.showWindow) {
-    window.electron.showWindow();
-  }
+  console.log(`显示窗口: ${label || "main"}`);
+  window.electron?.showWindow();
 }
 
 export function hideWindow(label?: WindowLabel) {
-  if (window.electron?.hideWindow) {
-    window.electron.hideWindow();
-  }
+  console.log(`隐藏窗口: ${label || "main"}`);
+  window.electron?.hideWindow();
+}
+
+export function setWindowSize(width: number, height: number) {
+  window.electron?.setWindowSize(width, height);
+}
+
+export function setWindowPosition(x: number, y: number) {
+  window.electron?.setWindowPosition(x, y);
+}
+
+export function getWindowSize() {
+  return window.electron?.getWindowSize();
 }

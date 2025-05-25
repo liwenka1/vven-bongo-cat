@@ -1,20 +1,14 @@
 import { round } from "es-toolkit";
 import { computed, watch } from "vue";
 
-// import { LogicalSize, PhysicalSize } from '@tauri-apps/api/dpi' // TAURI-SPECIFIC
-// import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow' // TAURI-SPECIFIC
+import live2d from "../utils/live2d";
+import { getCursorMonitor } from "../utils/monitor";
+import { useAppListen } from "./useElectronListen";
 
-import live2d from "../utils/live2d"; // Assuming this util will be copied
-import { getCursorMonitor } from "../utils/monitor"; // Assuming this util will be copied
-
-// import { useTauriListen } from './useTauriListen' // TAURI-SPECIFIC - replace with Electron IPC
-
-import { LISTEN_KEY } from "@/constants"; // Assuming constants will be copied
+import { LISTEN_KEY } from "@/constants";
 import { useCatStore } from "@/stores/cat";
 import { useModelStore } from "@/stores/model";
-import { getImageSize } from "@/utils/dom"; // Assuming this util will be copied
-
-// const appWindow = getCurrentWebviewWindow() // TAURI-SPECIFIC - Get BrowserWindow instance via IPC if needed
+import { getImageSize } from "@/utils/dom";
 
 export function useModel() {
   const catStore = useCatStore();
@@ -33,24 +27,19 @@ export function useModel() {
         const { width, height } = await getImageSize(backgroundImagePath.value);
         const newWidth = round(width * (catStore.scale / 100));
         const newHeight = round(height * (catStore.scale / 100));
-        if (window.electron?.setWindowSize) {
-          await window.electron.setWindowSize(newWidth, newHeight);
-        }
+        window.electron?.setWindowSize(newWidth, newHeight);
       } catch (error) {
-        console.error("Error in scale watcher:", error);
+        console.error("缩放监听器错误:", error);
       }
     },
     { immediate: true }
   );
 
-  // TODO: Implement Electron IPC for LISTEN_KEY.PLAY_EXPRESSION
-  // Example:
-  // if (window.electronAPI && window.electronAPI.onPlayExpression) {
-  //   window.electronAPI.onPlayExpression((payload: number) => {
-  //     live2d.playExpressions(payload)
-  //   });
-  // }
-  console.warn("TODO: Implement Electron IPC for LISTEN_KEY.PLAY_EXPRESSION in useModel.ts");
+  // 监听表情播放事件
+  useAppListen(LISTEN_KEY.PLAY_EXPRESSION, (...args: unknown[]) => {
+    const payload = args[0] as number;
+    live2d.playExpressions(payload);
+  });
 
   async function handleLoad() {
     try {

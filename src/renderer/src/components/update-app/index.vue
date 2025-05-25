@@ -1,37 +1,29 @@
 <script setup lang="ts">
-// import type { Update } from '@tauri-apps/plugin-updater' // TAURI-SPECIFIC
-
-// import { relaunch } from '@tauri-apps/plugin-process' // TAURI-SPECIFIC
-// import { check } from '@tauri-apps/plugin-updater' // TAURI-SPECIFIC
 import { useIntervalFn } from "@vueuse/core";
-import { Flex, message, Modal } from "ant-design-vue";
+import { Flex, Modal } from "ant-design-vue";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { computed, reactive, watch } from "vue";
 import VueMarkdown from "vue-markdown-render";
 
-// import { useTauriListen } from '@/composables/useTauriListen' // Replaced with useAppListen
-import { useAppListen } from "@/composables/useTauriListen"; // Using adapted one
+import { useAppListen } from "@/composables/useElectronListen";
 import { GITHUB_LINK, LISTEN_KEY } from "@/constants";
-// import { showWindow } from '@/plugins/window' // This needs Electron adaptation
 import { useGeneralStore } from "@/stores/general";
 
 dayjs.extend(utc);
 
-// Electron update object structure (example, depends on electron-updater)
+// Electron 更新信息接口
 interface ElectronUpdateInfo {
   version: string;
   releaseDate: string;
   releaseNotes?: string | null;
-  // other fields from electron-updater as needed
 }
 
 interface State {
   open: boolean;
-  update?: ElectronUpdateInfo; // Adapted for Electron
+  update?: ElectronUpdateInfo;
   downloading: boolean;
-  totalProgress?: number; // For electron-updater, progress is often 0-100
-  downloadProgress: number; // Percentage for electron-updater
+  downloadProgress: number;
 }
 
 const generalStore = useGeneralStore();
@@ -40,88 +32,39 @@ const state = reactive<State>({
   downloading: false,
   downloadProgress: 0
 });
-const MESSAGE_KEY = "updatable";
 
-// TODO: Electron update check needs to be implemented using IPC to main process (e.g., with electron-updater)
-const { pause, resume } = useIntervalFn(checkUpdate, 1000 * 60 * 60 * 24); // Interval for auto-check
+// 自动检查更新间隔
+const { pause, resume } = useIntervalFn(checkUpdate, 1000 * 60 * 60 * 24);
 
 watch(
   () => generalStore.autoCheckUpdate,
   (value) => {
     pause();
     if (!value) return;
-    checkUpdate(); // Initial check if enabled
+    checkUpdate();
     resume();
   },
   { immediate: true }
 );
 
-// Listen for manual update check requests
+// 监听手动更新检查请求
 useAppListen<boolean>(LISTEN_KEY.UPDATE_APP, () => {
-  checkUpdate(true);
+  checkUpdate();
 });
 
 const downloadProgressText = computed(() => {
-  // For electron-updater, progress is usually a percentage
   return state.downloading ? `${state.downloadProgress.toFixed(0)}%` : "立即更新";
 });
 
-async function checkUpdate(visibleMessage = false) {
-  console.warn("TODO: Implement checkUpdate for Electron using IPC");
-  // Example IPC call to main process to check for updates:
-  // if (window.electronAPI && window.electronAPI.checkForUpdates) {
-  //   if (visibleMessage) {
-  //     message.loading({ key: MESSAGE_KEY, duration: 0, content: '正在检查更新...' });
-  //   }
-  //   try {
-  //     const updateInfo = await window.electronAPI.checkForUpdates();
-  //     if (updateInfo) {
-  //       state.update = {
-  //            version: updateInfo.version,
-  //            releaseDate: dayjs.utc(updateInfo.releaseDate).local().format('YYYY-MM-DD HH:mm:ss'),
-  //            releaseNotes: replaceBody(updateInfo.releaseNotes || ''),
-  //       };
-  //       // Potentially call showWindow() equivalent for Electron if needed
-  //       state.open = true;
-  //       message.destroy(MESSAGE_KEY);
-  //     } else if (visibleMessage) {
-  //       message.success({ key: MESSAGE_KEY, content: '当前已是最新版本🎉' });
-  //     }
-  //   } catch (error) {
-  //     if (visibleMessage) message.error({ key: MESSAGE_KEY, content: String(error) });
-  //   }
-  // }
-}
-
-function replaceBody(body: string) {
-  // This function seems fine as is
-  return body
-    .replace(/&nbsp;/g, "")
-    .split("\n")
-    .map((line) => line.replace(/\s*-\s+by\s+@.*/, ""))
-    .join("\n");
+async function checkUpdate() {
+  console.warn("TODO: 实现 Electron 更新检查功能");
+  // TODO: 实现 Electron 更新检查逻辑
+  // 可以使用 electron-updater 库
 }
 
 async function handleOk() {
-  console.warn("TODO: Implement handleOk for Electron update download/install using IPC");
-  // Example IPC calls for electron-updater:
-  // if (window.electronAPI && state.update) {
-  //   try {
-  //     state.downloading = true;
-  //     // Listen for download progress
-  //     window.electronAPI.onUpdateDownloadProgress((progressObj: { percent: number }) => {
-  //       state.downloadProgress = progressObj.percent;
-  //     });
-  //     await window.electronAPI.downloadUpdate(); // Main process downloads
-  //     // After download, main process might auto-quit and install, or prompt renderer
-  //     // For simplicity, assume main process handles relaunch after download
-  //     // window.electronAPI.quitAndInstall(); // If manual trigger from renderer is needed
-  //   } catch (error) {
-  //     message.error(String(error));
-  //     state.downloading = false;
-  //   }
-  //   // No finally state.downloading = false, as app might quit.
-  // }
+  console.warn("TODO: 实现 Electron 更新下载和安装功能");
+  // TODO: 实现 Electron 更新下载和安装逻辑
 }
 </script>
 

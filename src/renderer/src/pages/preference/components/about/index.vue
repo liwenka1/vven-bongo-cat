@@ -1,37 +1,32 @@
 <script setup lang="ts">
-// import { emit } from '@tauri-apps/api/event' // TAURI-SPECIFIC
-// import { appLogDir } from '@tauri-apps/api/path' // TAURI-SPECIFIC
-// import { openPath, openUrl } from '@tauri-apps/plugin-opener' // TAURI-SPECIFIC
 import { Button } from "ant-design-vue";
 import { onMounted, ref } from "vue";
 
 import ProList from "@/components/pro-list/index.vue";
 import ProListItem from "@/components/pro-list-item/index.vue";
-import { GITHUB_LINK } from "@/constants"; // Assuming constants will be copied
+import { GITHUB_LINK } from "@/constants";
 import { useAppStore } from "@/stores/app";
 
 const appStore = useAppStore();
 const logDir = ref("");
 
 onMounted(async () => {
-  // logDir.value = await appLogDir() // TAURI-SPECIFIC - needs Electron equivalent (e.g., app.getPath('logs'))
-  console.warn("TODO: Implement appLogDir for Electron");
-  logDir.value = "path/to/electron/logs"; // Placeholder
+  // TODO: 获取 Electron 日志目录
+  logDir.value = "待实现：获取日志目录";
 });
 
 function handleUpdate() {
-  // emit(LISTEN_KEY.UPDATE_APP) // TAURI-SPECIFIC - needs Electron equivalent for app updates (e.g., ipcRenderer.send('check-for-updates'))
-  console.warn("TODO: Implement emit(LISTEN_KEY.UPDATE_APP) for Electron");
+  // TODO: 触发更新检查
+  console.log("检查更新功能待实现");
 }
 
 function feedbackIssue() {
-  // openUrl(`${GITHUB_LINK}/issues/new`) // TAURI-SPECIFIC - use Electron's shell.openExternal
-  console.warn("TODO: Implement openUrl for Electron", `${GITHUB_LINK}/issues/new`);
+  window.electron?.openExternal(`${GITHUB_LINK}/issues/new`);
 }
 
 function openLogPath() {
-  // openPath(logDir.value) // TAURI-SPECIFIC - use Electron's shell.openPath
-  console.warn("TODO: Implement openPath for Electron", logDir.value);
+  // TODO: 打开日志目录
+  console.log("打开日志目录功能待实现:", logDir.value);
 }
 </script>
 

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// import { Menu } from '@tauri-apps/api/menu' // TAURI-SPECIFIC
-// import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow' // TAURI-SPECIFIC
 import { useDebounceFn, useEventListener } from "@vueuse/core";
 import { onMounted, onUnmounted, ref, watch } from "vue";
 
@@ -8,7 +6,6 @@ import { useDevice } from "@/composables/useDevice";
 import { useModel } from "@/composables/useModel";
 import { useCatStore } from "@/stores/cat";
 
-// const appWindow = getCurrentWebviewWindow() // TAURI-SPECIFIC
 const { pressedMouses, mousePosition, pressedKeys } = useDevice();
 const {
   backgroundImagePath,
@@ -29,47 +26,37 @@ onUnmounted(handleDestroy);
 
 const handleDebounceResize = useDebounceFn(async () => {
   await handleResize();
-
   resizing.value = false;
 }, 100);
 
 useEventListener("resize", () => {
   resizing.value = true;
-
   handleDebounceResize();
 });
 
 watch(pressedMouses, handleMouseDown);
-
 watch(mousePosition, handleMouseMove);
-
 watch(pressedKeys, handleKeyDown);
 
 watch(
   () => catStore.penetrable,
   (value) => {
-    if (window.electron?.setIgnoreCursorEvents) {
-      window.electron.setIgnoreCursorEvents(value);
-    }
+    window.electron?.setIgnoreMouse?.(value);
   },
   { immediate: true }
 );
 
 function handleWindowDrag() {
-  // appWindow.startDragging() // TAURI-SPECIFIC - needs Electron equivalent
-  console.warn("TODO: Implement startDragging for Electron");
+  window.electron?.startDragging?.();
 }
 
 async function handleContextmenu(event: MouseEvent) {
   event.preventDefault();
-  // const menu = await Menu.new({ // TAURI-SPECIFIC
-  //   items: await getSharedMenu(),
-  // })
-  // menu.popup()
+  // TODO: 实现右键菜单功能
+  console.log("右键菜单功能待实现");
 }
 
 function resolveImageURL(key: string) {
-  console.log("Loading key image:", key);
   return `/keys/${key}.png`;
 }
 </script>
