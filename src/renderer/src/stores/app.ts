@@ -3,8 +3,9 @@ import type { WindowState } from "../composables/useWindowState";
 
 export const useAppStore = defineStore("app", {
   state: () => ({
+    name: "Vven Bongo Cat",
     isMaximized: false,
-    version: "",
+    version: "1.0.0",
     latestVersion: "",
     updateAvailable: false,
     updateProgress: 0,
@@ -12,6 +13,9 @@ export const useAppStore = defineStore("app", {
     windowState: {} as WindowState
   }),
   actions: {
+    setName(value: string) {
+      this.name = value;
+    },
     setMaximized(value: boolean) {
       this.isMaximized = value;
     },

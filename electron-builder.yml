@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: electron-app
+appId: com.vven.bongocat
+productName: Vven Bongo Cat
 directories:
   buildResources: build
 files:
@@ -9,16 +9,33 @@ files:
   - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
   - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
   - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+  - "!OPTIMIZATION_SUMMARY.md"
 asarUnpack:
   - resources/**
 win:
-  executableName: electron-app
+  executableName: vven-bongo-cat
+  target:
+    - target: portable
+      arch:
+        - x64
+  sign: false
+  verifyUpdateCodeSignature: false
+portable:
+  artifactName: ${name}-${version}-portable.${ext}
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  oneClick: false
+  allowToChangeInstallationDirectory: true
 mac:
+  category: public.app-category.entertainment
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
@@ -33,8 +50,8 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
-  category: Utility
+  maintainer: vven
+  category: Game
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false

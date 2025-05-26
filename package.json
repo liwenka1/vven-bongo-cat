@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
+  "author": "VVenKAI",
+  "license": "MIT",
+  "homepage": "https://github.com/liwenka1/vven-bongo-cat",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/liwenka1/vven-bongo-cat"
+  },
   "packageManager": "pnpm@9.12.1",
   "scripts": {
     "format": "prettier --write --end-of-line lf --single-quote false --trailing-comma none .",
@@ -61,6 +68,6 @@
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
     "vue": "^3.4.15",
-    "vue-tsc": "^1.8.27"
+    "vue-tsc": "^2.2.10"
   }
 }

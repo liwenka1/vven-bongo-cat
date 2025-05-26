@@ -48,7 +48,7 @@ watch(
 );
 
 // 监听手动更新检查请求
-useAppListen<boolean>(LISTEN_KEY.UPDATE_APP, () => {
+useAppListen(LISTEN_KEY.UPDATE_APP, () => {
   checkUpdate();
 });
 
