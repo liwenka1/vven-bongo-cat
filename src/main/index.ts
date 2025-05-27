@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, screen, nativeImage } from "electron";
+import { app, shell, BrowserWindow, ipcMain, screen, nativeImage, Menu } from "electron";
 import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import iconPath from "../../resources/icon.png?asset";
@@ -15,6 +15,7 @@ function createWindow(): void {
     transparent: true,
     autoHideMenuBar: true,
     alwaysOnTop: true,
+    skipTaskbar: false, // 确保可以在任务栏中看到
     icon,
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
@@ -90,6 +91,41 @@ function createWindow(): void {
     };
   });
 
+  // Handle context menu
+  ipcMain.handle("menu:showContextMenu", (_, menuTemplate: unknown[]) => {
+    // Convert menu template to remove function references and add click handlers
+    const processMenuItem = (item: Record<string, unknown>): Record<string, unknown> => {
+      if (item.type === "separator") {
+        return { type: "separator" };
+      }
+
+      const processedItem: Record<string, unknown> = {
+        label: item.label,
+        type: item.type || "normal",
+        checked: item.checked,
+        enabled: item.enabled !== false
+      };
+
+      if (item.accelerator) {
+        processedItem.accelerator = item.accelerator;
+      }
+
+      if (item.submenu && Array.isArray(item.submenu)) {
+        processedItem.submenu = item.submenu.map((subItem: Record<string, unknown>) => processMenuItem(subItem));
+      } else if (item.action) {
+        processedItem.click = () => {
+          mainWindow.webContents.send("menu:action", item.action, item.data);
+        };
+      }
+
+      return processedItem;
+    };
+
+    const processedTemplate = menuTemplate.map((item: unknown) => processMenuItem(item as Record<string, unknown>));
+    const menu = Menu.buildFromTemplate(processedTemplate);
+    menu.popup({ window: mainWindow });
+  });
+
   // Handle external URLs
   ipcMain.handle("shell:openExternal", (_, url: string) => {
     return shell.openExternal(url);
@@ -101,6 +137,19 @@ function createWindow(): void {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+  }
+
+  // 禁用系统右键菜单（仅Windows）
+  if (process.platform === "win32") {
+    try {
+      mainWindow.hookWindowMessage(278, () => {
+        mainWindow.setEnabled(false);
+        setTimeout(() => mainWindow.setEnabled(true), 100);
+        return true;
+      });
+    } catch (error) {
+      console.log("Failed to hook window message:", error);
+    }
   }
 }
 

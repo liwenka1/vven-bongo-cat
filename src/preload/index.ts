@@ -1,6 +1,19 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 
+// Define menu item interface
+interface MenuItemTemplate {
+  label?: string;
+  type?: "normal" | "separator" | "submenu" | "checkbox" | "radio";
+  accelerator?: string;
+  checked?: boolean;
+  enabled?: boolean;
+  click?: () => void;
+  action?: string;
+  data?: unknown;
+  submenu?: MenuItemTemplate[];
+}
+
 // Custom APIs for renderer
 const api = {
   // Window management
@@ -15,18 +28,21 @@ const api = {
   // Monitor and cursor
   getCursorMonitor: () => ipcRenderer.invoke("screen:getCursorMonitor"),
 
+  // Menu
+  showContextMenu: (menuTemplate: MenuItemTemplate[]) => ipcRenderer.invoke("menu:showContextMenu", menuTemplate),
+
   // Shell operations
   openExternal: (url: string) => ipcRenderer.invoke("shell:openExternal", url),
 
   // Event handling
-  on: (channel: string, callback: (...args: any[]) => void) => {
-    ipcRenderer.on(channel, (_event: IpcRendererEvent, ...args: any[]) => callback(...args));
+  on: (channel: string, callback: (...args: unknown[]) => void) => {
+    ipcRenderer.on(channel, (_event: IpcRendererEvent, ...args: unknown[]) => callback(...args));
   },
-  off: (channel: string, callback: (...args: any[]) => void) => {
-    ipcRenderer.removeListener(channel, callback as any);
+  off: (channel: string, callback: (...args: unknown[]) => void) => {
+    ipcRenderer.removeListener(channel, callback as (...args: unknown[]) => void);
   },
-  once: (channel: string, callback: (...args: any[]) => void) => {
-    ipcRenderer.once(channel, (_event: IpcRendererEvent, ...args: any[]) => callback(...args));
+  once: (channel: string, callback: (...args: unknown[]) => void) => {
+    ipcRenderer.once(channel, (_event: IpcRendererEvent, ...args: unknown[]) => callback(...args));
   }
 };
 

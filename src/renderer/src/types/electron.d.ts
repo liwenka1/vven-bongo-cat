@@ -14,11 +14,26 @@ interface ElectronAPI {
     cursorPosition: { x: number; y: number };
   }>;
 
+  // Menu
+  showContextMenu: (menuTemplate: MenuItemTemplate[]) => Promise<void>;
+
   // Shell operations
   openExternal: (url: string) => Promise<void>;
   on: (channel: string, callback: (...args: unknown[]) => void) => void;
   off: (channel: string, callback: (...args: unknown[]) => void) => void;
   once: (channel: string, callback: (...args: unknown[]) => void) => void;
+}
+
+interface MenuItemTemplate {
+  label?: string;
+  type?: "normal" | "separator" | "submenu" | "checkbox" | "radio";
+  accelerator?: string;
+  checked?: boolean;
+  enabled?: boolean;
+  click?: () => void;
+  action?: string;
+  data?: unknown;
+  submenu?: MenuItemTemplate[];
 }
 
 declare global {
