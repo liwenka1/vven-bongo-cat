@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, screen, nativeImage, Menu, Tray, globalShortcut, ipcMain } from "electron";
+import { app, shell, BrowserWindow, screen, nativeImage, Menu, Tray, ipcMain } from "electron";
 import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import iconPath from "../../resources/icon.png?asset";
@@ -10,57 +10,6 @@ let isQuiting = false;
 
 // 全局键盘监听状态
 let globalListenerActive = false;
-
-// 键盘映射 - 用于全局监听
-const keyMappings = [
-  "a",
-  "b",
-  "c",
-  "d",
-  "e",
-  "f",
-  "g",
-  "h",
-  "i",
-  "j",
-  "k",
-  "l",
-  "m",
-  "n",
-  "o",
-  "p",
-  "q",
-  "r",
-  "s",
-  "t",
-  "u",
-  "v",
-  "w",
-  "x",
-  "y",
-  "z",
-  "0",
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "space",
-  "enter",
-  "backspace",
-  "tab",
-  "escape",
-  "delete",
-  "left",
-  "right",
-  "up",
-  "down"
-  // 移除修饰键：'shift', 'ctrl', 'alt', 'cmd' 因为不能单独注册
-];
 
 function createWindow(): void {
   const icon = nativeImage.createFromPath(iconPath);
@@ -75,8 +24,8 @@ function createWindow(): void {
     autoHideMenuBar: true,
     alwaysOnTop: true,
 
-    // 非侵入式配置
-    focusable: false, // 禁止窗口获取焦点 ★ 核心参数
+    // 非侵入式配置 - 修改为允许接收键盘事件但保持非侵入性
+    focusable: true, // 允许窗口获取焦点以接收键盘事件
     skipTaskbar: true, // 不在任务栏显示
     resizable: true, // 允许调整大小 - 修复尺寸调整问题
     minimizable: false, // 不可最小化
@@ -112,22 +61,16 @@ function createWindow(): void {
   mainWindow.on("ready-to-show", () => {
     if (mainWindow) {
       mainWindow.show();
-      // 防止窗口获取焦点
-      mainWindow.blur();
+      // 移除强制blur调用，让窗口可以接收键盘事件
     }
   });
 
-  // 防止窗口意外获取焦点
-  mainWindow.on("focus", () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.blur();
-    }
-  });
+  // 移除focus事件的强制blur处理，这样窗口可以正常接收键盘事件
 
   mainWindow.on("show", () => {
     if (mainWindow) {
       mainWindow.setSkipTaskbar(true);
-      mainWindow.blur();
+      // 移除强制blur调用
     }
   });
 
@@ -218,8 +161,8 @@ function createTray(): void {
       },
       { type: "separator" },
       {
-        label: `全局监听: ${globalListenerActive ? "已启用" : "已禁用"}`,
-        type: "checkbox",
+        label: `键盘监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
+        type: 'checkbox',
         checked: globalListenerActive,
         click: () => {
           globalListenerActive ? stopGlobalListener() : startGlobalListener();
@@ -264,69 +207,29 @@ function createTray(): void {
   }
 }
 
-// 启动全局键盘监听
+// 启动全局键盘监听 (现在只是状态管理，不实际拦截系统输入)
 function startGlobalListener(): void {
   if (globalListenerActive) return;
 
   if (is.dev) {
-    console.log("🚀 启动全局键盘监听...");
+    console.log("🚀 启动键盘监听...");
   }
 
   try {
-    // 注册常用键盘快捷键进行全局监听
-    keyMappings.forEach((key) => {
-      try {
-        // 简化键名映射
-        const accelerator =
-          key === "space"
-            ? "Space"
-            : key === "enter"
-              ? "Return"
-              : key === "backspace"
-                ? "Backspace"
-                : key === "tab"
-                  ? "Tab"
-                  : key === "escape"
-                    ? "Escape"
-                    : key === "delete"
-                      ? "Delete"
-                      : key === "left"
-                        ? "Left"
-                        : key === "right"
-                          ? "Right"
-                          : key === "up"
-                            ? "Up"
-                            : key === "down"
-                              ? "Down"
-                              : key;
-
-        globalShortcut.register(accelerator, () => {
-          // 发送键盘事件到渲染进程
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send("global-key-press", {
-              key: key,
-              timestamp: Date.now()
-            });
-          }
-        });
-      } catch (error) {
-        // 某些键可能已被系统占用，仅在开发模式下显示警告
-        if (is.dev) {
-          console.warn(`无法注册全局快捷键: ${key}`, error);
-        }
-      }
-    });
+    // 不再注册全局快捷键，避免拦截系统输入
+    // 改为依赖窗口内监听，这样不会影响其他应用程序的输入
 
     globalListenerActive = true;
 
     if (is.dev) {
-      console.log("✅ 全局键盘监听已启动");
+      console.log("✅ 键盘监听已启动（窗口内模式）");
     }
 
     // 更新托盘菜单
     updateTrayMenu();
+
   } catch (error) {
-    console.error("❌ 启动全局监听失败:", error);
+    console.error("❌ 启动键盘监听失败:", error);
   }
 }
 
@@ -335,21 +238,22 @@ function stopGlobalListener(): void {
   if (!globalListenerActive) return;
 
   if (is.dev) {
-    console.log("🛑 停止全局键盘监听...");
+    console.log("🛑 停止键盘监听...");
   }
 
   try {
-    globalShortcut.unregisterAll();
+    // 不再需要取消注册全局快捷键
     globalListenerActive = false;
 
     if (is.dev) {
-      console.log("✅ 全局键盘监听已停止");
+      console.log("✅ 键盘监听已停止");
     }
 
     // 更新托盘菜单
     updateTrayMenu();
+
   } catch (error) {
-    console.error("❌ 停止全局监听失败:", error);
+    console.error("❌ 停止键盘监听失败:", error);
   }
 }
 
@@ -363,6 +267,7 @@ function updateTrayMenu(): void {
       click: () => {
         if (mainWindow) {
           mainWindow.show();
+          mainWindow.focus();
         }
       }
     },
@@ -376,8 +281,8 @@ function updateTrayMenu(): void {
     },
     { type: "separator" },
     {
-      label: `全局监听: ${globalListenerActive ? "已启用" : "已禁用"}`,
-      type: "checkbox",
+      label: `键盘监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
+      type: 'checkbox',
       checked: globalListenerActive,
       click: () => {
         globalListenerActive ? stopGlobalListener() : startGlobalListener();
@@ -477,6 +382,7 @@ function setupIpcHandlers(): void {
   ipcMain.handle("window:show", () => {
     if (mainWindow) {
       mainWindow.show();
+      mainWindow.focus();
     }
   });
 

@@ -2,18 +2,13 @@ import type { Ref } from "vue";
 
 import { useDebounceFn, useEventListener } from "@vueuse/core";
 import { uniq } from "es-toolkit";
-import { reactive, ref, watch, onMounted, onUnmounted } from "vue";
+import { reactive, ref, watch } from "vue";
 
 import { useCatStore } from "@/stores/cat";
 
 interface MouseMoveValue {
   x: number;
   y: number;
-}
-
-interface GlobalKeyEvent {
-  key: string;
-  timestamp: number;
 }
 
 function getSupportKeys() {
@@ -110,9 +105,16 @@ export function useDevice() {
   const pressedKeys = ref<string[]>([]);
   const catStore = useCatStore();
 
-  // 全局监听状态
-  const globalListenerActive = ref(false);
+  // 监听状态 - 初始化为启用状态
+  const globalListenerActive = ref(true);
   const usingGlobalListener = ref(false);
+
+  // 初始化时获取后端监听状态
+  if (window.electron?.global?.isListenerActive) {
+    window.electron.global.isListenerActive().then((active) => {
+      globalListenerActive.value = active;
+    });
+  }
 
   watch(
     () => catStore.mode,
@@ -172,97 +174,21 @@ export function useDevice() {
     return key;
   };
 
-  // 全局键盘事件处理
-  const handleGlobalKeyPress = (event: GlobalKeyEvent) => {
-    usingGlobalListener.value = true;
-    console.log("🌍 Global key event:", event);
-
+  // 窗口内键盘事件监听
+  useEventListener(window, "keydown", (event: globalThis.KeyboardEvent) => {
+    usingGlobalListener.value = false; // 标记为窗口内监听
     const key = normalizeKeyValue(event.key);
     if (key === "CapsLock") {
       handlePress(pressedKeys, "CapsLock");
       debounceCapsLockRelease();
     }
     handlePress(pressedKeys, key);
-
-    // 自动释放按键（因为全局监听无法捕获 keyup）
-    setTimeout(() => {
-      if (key !== "CapsLock") {
-        handleRelease(pressedKeys, key);
-      }
-    }, 100);
-  };
-
-  // 检查全局监听状态
-  const checkGlobalListenerStatus = async () => {
-    try {
-      const isActive = await window.electron?.global?.isListenerActive?.();
-      globalListenerActive.value = isActive || false;
-      console.log("🌍 Global listener status:", globalListenerActive.value);
-    } catch (error) {
-      console.error("❌ Failed to check global listener status:", error);
-    }
-  };
-
-  // 启动全局监听
-  const startGlobalListener = async () => {
-    try {
-      const result = await window.electron?.global?.startListener?.();
-      globalListenerActive.value = result || false;
-      console.log("🌍 Global listener started:", globalListenerActive.value);
-    } catch (error) {
-      console.error("❌ Failed to start global listener:", error);
-    }
-  };
-
-  // 停止全局监听
-  const stopGlobalListener = async () => {
-    try {
-      const result = await window.electron?.global?.stopListener?.();
-      globalListenerActive.value = result || false;
-      console.log("🌍 Global listener stopped:", globalListenerActive.value);
-    } catch (error) {
-      console.error("❌ Failed to stop global listener:", error);
-    }
-  };
-
-  onMounted(() => {
-    // 检查全局监听状态
-    checkGlobalListenerStatus();
-
-    // 监听全局键盘事件
-    window.electron?.on?.("global-key-press", (...args: unknown[]) => {
-      const event = args[0] as GlobalKeyEvent;
-      handleGlobalKeyPress(event);
-    });
-  });
-
-  onUnmounted(() => {
-    // 清理全局事件监听
-    window.electron?.off?.("global-key-press", (...args: unknown[]) => {
-      const event = args[0] as GlobalKeyEvent;
-      handleGlobalKeyPress(event);
-    });
-  });
-
-  // 窗口内键盘事件监听（作为备用）
-  useEventListener(window, "keydown", (event: globalThis.KeyboardEvent) => {
-    if (!globalListenerActive.value) {
-      usingGlobalListener.value = false;
-      const key = normalizeKeyValue(event.key);
-      if (key === "CapsLock") {
-        handlePress(pressedKeys, "CapsLock");
-        debounceCapsLockRelease();
-      }
-      handlePress(pressedKeys, key);
-    }
   });
 
   useEventListener(window, "keyup", (event: globalThis.KeyboardEvent) => {
-    if (!globalListenerActive.value) {
-      const key = normalizeKeyValue(event.key);
-      if (key !== "CapsLock") {
-        handleRelease(pressedKeys, key);
-      }
+    const key = normalizeKeyValue(event.key);
+    if (key !== "CapsLock") {
+      handleRelease(pressedKeys, key);
     }
   });
 
@@ -306,9 +232,6 @@ export function useDevice() {
     mousePosition,
     pressedKeys,
     globalListenerActive,
-    usingGlobalListener,
-    startGlobalListener,
-    stopGlobalListener,
-    checkGlobalListenerStatus
+    usingGlobalListener
   };
 }
