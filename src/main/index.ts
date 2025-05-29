@@ -1,44 +1,125 @@
-import { app, shell, BrowserWindow, ipcMain, screen, nativeImage, Menu } from "electron";
+import { app, shell, BrowserWindow, screen, nativeImage, Menu, Tray, globalShortcut, ipcMain } from "electron";
 import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import iconPath from "../../resources/icon.png?asset";
 
+// 全局变量
+let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+let isQuiting = false;
+
+// 全局键盘监听状态
+let globalListenerActive = false;
+
+// 键盘映射 - 用于全局监听
+const keyMappings = [
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  'space', 'enter', 'backspace', 'tab', 'escape', 'delete',
+  'left', 'right', 'up', 'down',
+  'shift', 'ctrl', 'alt', 'cmd'
+];
+
 function createWindow(): void {
   const icon = nativeImage.createFromPath(iconPath);
 
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 300, // Default size for the cat window
+  // Create the browser window with non-intrusive configuration
+  mainWindow = new BrowserWindow({
+    width: 300,
     height: 300,
-    show: false,
-    frame: false, // Frameless window for the cat
-    transparent: true,
+    show: false, // 初始不显示
+    frame: false, // 无边框
+    transparent: true, // 透明背景
     autoHideMenuBar: true,
     alwaysOnTop: true,
-    skipTaskbar: false, // 确保可以在任务栏中看到
+
+    // 非侵入式配置
+    focusable: false, // 禁止窗口获取焦点 ★ 核心参数
+    skipTaskbar: true, // 不在任务栏显示
+    resizable: true, // 允许调整大小 - 修复尺寸调整问题
+    minimizable: false, // 不可最小化
+    maximizable: false, // 不可最大化
+    movable: true, // 保持可移动（用户可能需要调整位置）
+    closable: true, // 保持可关闭
+    hasShadow: false, // 无阴影，更透明
+
+    // 平台特殊配置
+    type: process.platform === 'darwin' ? 'panel' : undefined,
+
     icon,
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
       sandbox: false,
       nodeIntegration: true,
       contextIsolation: true,
-      webSecurity: false // 临时禁用 web 安全性以便加载本地资源
+      webSecurity: false,
+      backgroundThrottling: false // 禁止后台节流
     }
   });
 
+  // 平台特殊处理
+  if (process.platform === 'win32') {
+    // Windows: 设置为桌面层窗口
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
+    mainWindow.setSkipTaskbar(true);
+  } else if (process.platform === 'linux') {
+    // Linux: 设置在所有工作区可见
+    mainWindow.setVisibleOnAllWorkspaces(true);
+  }
+
   mainWindow.on("ready-to-show", () => {
-    mainWindow.show();
+    if (mainWindow) {
+      mainWindow.show();
+      // 防止窗口获取焦点
+      mainWindow.blur();
+    }
+  });
+
+  // 防止窗口意外获取焦点
+  mainWindow.on('focus', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.blur();
+    }
+  });
+
+  mainWindow.on('show', () => {
+    if (mainWindow) {
+      mainWindow.setSkipTaskbar(true);
+      mainWindow.blur();
+    }
+  });
+
+  // 窗口关闭处理 - 隐藏而不是真正关闭
+  mainWindow.on('close', (event) => {
+    if (!isQuiting) {
+      event.preventDefault();
+      mainWindow?.hide();
+
+      // 显示托盘提示
+      if (tray && process.platform === 'win32') {
+        tray.displayBalloon({
+          iconType: 'info',
+          title: 'Bongo Cat',
+          content: '应用已最小化到系统托盘，继续在后台运行'
+        });
+      }
+    }
   });
 
   // 监听窗口移动和大小变化
   mainWindow.on("move", () => {
-    const [x, y] = mainWindow.getPosition();
-    mainWindow.webContents.send("window-state-changed", { x, y });
+    if (mainWindow) {
+      const [x, y] = mainWindow.getPosition();
+      mainWindow.webContents.send("window-state-changed", { x, y });
+    }
   });
 
   mainWindow.on("resize", () => {
-    const [width, height] = mainWindow.getSize();
-    mainWindow.webContents.send("window-state-changed", { width, height });
+    if (mainWindow) {
+      const [width, height] = mainWindow.getSize();
+      mainWindow.webContents.send("window-state-changed", { width, height });
+    }
   });
 
   // Handle external links
@@ -47,35 +128,339 @@ function createWindow(): void {
     return { action: "deny" };
   });
 
-  // IPC handlers for window management
+  // Load the app
+  if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+    mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
+  } else {
+    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+  }
+
+  // 禁用系统右键菜单（仅Windows）
+  if (process.platform === "win32") {
+    try {
+      mainWindow.hookWindowMessage(278, () => {
+        if (mainWindow) {
+          mainWindow.setEnabled(false);
+          setTimeout(() => mainWindow?.setEnabled(true), 100);
+        }
+        return true;
+      });
+    } catch (error) {
+      console.log("Failed to hook window message:", error);
+    }
+  }
+}
+
+// 创建系统托盘
+function createTray(): void {
+  if (!tray) {
+    const icon = nativeImage.createFromPath(iconPath);
+    tray = new Tray(icon.resize({ width: 16, height: 16 }));
+
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: '显示窗口',
+        click: () => {
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+          }
+        }
+      },
+      {
+        label: '隐藏窗口',
+        click: () => {
+          if (mainWindow) {
+            mainWindow.hide();
+          }
+        }
+      },
+      { type: 'separator' },
+      {
+        label: `全局监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
+        type: 'checkbox',
+        checked: globalListenerActive,
+        click: () => {
+          globalListenerActive ? stopGlobalListener() : startGlobalListener();
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '开机自启动',
+        type: 'checkbox',
+        checked: app.getLoginItemSettings().openAtLogin,
+        click: () => {
+          const { openAtLogin } = app.getLoginItemSettings();
+          app.setLoginItemSettings({
+            openAtLogin: !openAtLogin,
+            path: app.getPath('exe')
+          });
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '退出',
+        click: () => {
+          isQuiting = true;
+          app.quit();
+        }
+      }
+    ]);
+
+    tray.setToolTip('Bongo Cat - 后台运行中');
+    tray.setContextMenu(contextMenu);
+
+    // 托盘图标点击显示/隐藏窗口
+    tray.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
+          mainWindow.show();
+        }
+      }
+    });
+  }
+}
+
+// 启动全局键盘监听
+function startGlobalListener(): void {
+  if (globalListenerActive) return;
+
+  console.log('🚀 启动全局键盘监听...');
+
+  try {
+    // 注册常用键盘快捷键进行全局监听
+    keyMappings.forEach(key => {
+      try {
+        const accelerator = key === 'cmd' ? 'CommandOrControl' :
+                          key === 'ctrl' ? 'Control' :
+                          key === 'alt' ? 'Alt' :
+                          key === 'shift' ? 'Shift' :
+                          key === 'space' ? 'Space' :
+                          key === 'enter' ? 'Return' :
+                          key === 'backspace' ? 'Backspace' :
+                          key === 'tab' ? 'Tab' :
+                          key === 'escape' ? 'Escape' :
+                          key === 'delete' ? 'Delete' :
+                          key === 'left' ? 'Left' :
+                          key === 'right' ? 'Right' :
+                          key === 'up' ? 'Up' :
+                          key === 'down' ? 'Down' :
+                          key;
+
+        globalShortcut.register(accelerator, () => {
+          // 发送键盘事件到渲染进程
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('global-key-press', {
+              key: key,
+              timestamp: Date.now()
+            });
+          }
+        });
+      } catch (error) {
+        // 某些键可能已被系统占用，忽略错误
+        console.warn(`无法注册全局快捷键: ${key}`, error);
+      }
+    });
+
+    globalListenerActive = true;
+    console.log('✅ 全局键盘监听已启动');
+
+    // 更新托盘菜单
+    updateTrayMenu();
+
+  } catch (error) {
+    console.error('❌ 启动全局监听失败:', error);
+  }
+}
+
+// 停止全局键盘监听
+function stopGlobalListener(): void {
+  if (!globalListenerActive) return;
+
+  console.log('🛑 停止全局键盘监听...');
+
+  try {
+    globalShortcut.unregisterAll();
+    globalListenerActive = false;
+    console.log('✅ 全局键盘监听已停止');
+
+    // 更新托盘菜单
+    updateTrayMenu();
+
+  } catch (error) {
+    console.error('❌ 停止全局监听失败:', error);
+  }
+}
+
+// 更新托盘菜单
+function updateTrayMenu(): void {
+  if (!tray) return;
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示窗口',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+        }
+      }
+    },
+    {
+      label: '隐藏窗口',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.hide();
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: `全局监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
+      type: 'checkbox',
+      checked: globalListenerActive,
+      click: () => {
+        globalListenerActive ? stopGlobalListener() : startGlobalListener();
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '开机自启动',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: () => {
+        const { openAtLogin } = app.getLoginItemSettings();
+        app.setLoginItemSettings({
+          openAtLogin: !openAtLogin,
+          path: app.getPath('exe')
+        });
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => {
+        isQuiting = true;
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setContextMenu(contextMenu);
+}
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(() => {
+  // Set app user model id for windows
+  electronApp.setAppUserModelId("com.vven.bongocat");
+
+  // Default open or close DevTools by F12 in development
+  // and ignore CommandOrControl + R in production.
+  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+  app.on("browser-window-created", (_, window) => {
+    optimizer.watchWindowShortcuts(window);
+  });
+
+  // 1. 立即启动全局监听
+  startGlobalListener();
+
+  // 2. 创建窗口
+  createWindow();
+
+  // 3. 创建系统托盘
+  createTray();
+
+  // 4. 设置IPC处理器
+  setupIpcHandlers();
+
+  app.on("activate", function () {
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+// 防止应用意外退出 - 后台持续运行
+app.on('window-all-closed', (event) => {
+  // 阻止默认关闭行为，保持后台运行
+  event.preventDefault();
+
+  if (process.platform !== 'darwin') {
+    // Windows/Linux: 隐藏窗口但保持应用运行
+    if (mainWindow) {
+      mainWindow.hide();
+    }
+  }
+});
+
+// 应用真正退出前的清理
+app.on('before-quit', (event) => {
+  if (!isQuiting) {
+    event.preventDefault();
+    return;
+  }
+
+  // 清理全局监听
+  stopGlobalListener();
+
+  // 清理托盘
+  if (tray) {
+    tray.destroy();
+  }
+});
+
+// 设置IPC处理器
+function setupIpcHandlers(): void {
+  // 基础窗口控制
   ipcMain.handle("window:show", () => {
-    mainWindow.show();
+    if (mainWindow) {
+      mainWindow.show();
+    }
   });
 
   ipcMain.handle("window:hide", () => {
-    mainWindow.hide();
+    if (mainWindow) {
+      mainWindow.hide();
+    }
   });
 
   ipcMain.handle("window:setIgnoreMouse", (_, value: boolean) => {
-    mainWindow.setIgnoreMouseEvents(value, { forward: true });
+    if (mainWindow) {
+      mainWindow.setIgnoreMouseEvents(value, { forward: true });
+    }
   });
 
   ipcMain.handle("window:startDragging", () => {
-    // 在 Electron 中，窗口拖拽通常通过 CSS -webkit-app-region: drag 实现
-    // 这里不需要特殊处理，返回成功即可
     return true;
   });
 
   ipcMain.handle("window:setSize", (_, { width, height }) => {
-    mainWindow.setSize(width, height);
+    if (mainWindow) {
+      mainWindow.setSize(width, height);
+    }
   });
 
   ipcMain.handle("window:setPosition", (_, { x, y }) => {
-    mainWindow.setPosition(x, y);
+    if (mainWindow) {
+      mainWindow.setPosition(x, y);
+    }
   });
 
   ipcMain.handle("window:getSize", () => {
-    return mainWindow.getSize();
+    if (mainWindow) {
+      return mainWindow.getSize();
+    }
+    return [300, 300];
+  });
+
+  ipcMain.handle("window:getPosition", () => {
+    if (mainWindow) {
+      return mainWindow.getPosition();
+    }
+    return [0, 0];
   });
 
   ipcMain.handle("screen:getCursorMonitor", () => {
@@ -91,9 +476,25 @@ function createWindow(): void {
     };
   });
 
+  // 全局监听控制
+  ipcMain.handle("global:startListener", () => {
+    startGlobalListener();
+    return globalListenerActive;
+  });
+
+  ipcMain.handle("global:stopListener", () => {
+    stopGlobalListener();
+    return globalListenerActive;
+  });
+
+  ipcMain.handle("global:isListenerActive", () => {
+    return globalListenerActive;
+  });
+
   // Handle context menu
   ipcMain.handle("menu:showContextMenu", (_, menuTemplate: unknown[]) => {
-    // Convert menu template to remove function references and add click handlers
+    if (!mainWindow) return;
+
     const processMenuItem = (item: Record<string, unknown>): Record<string, unknown> => {
       if (item.type === "separator") {
         return { type: "separator" };
@@ -114,7 +515,9 @@ function createWindow(): void {
         processedItem.submenu = item.submenu.map((subItem: Record<string, unknown>) => processMenuItem(subItem));
       } else if (item.action) {
         processedItem.click = () => {
-          mainWindow.webContents.send("menu:action", item.action, item.data);
+          if (mainWindow) {
+            mainWindow.webContents.send("menu:action", item.action, item.data);
+          }
         };
       }
 
@@ -130,58 +533,7 @@ function createWindow(): void {
   ipcMain.handle("shell:openExternal", (_, url: string) => {
     return shell.openExternal(url);
   });
-
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-    mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
-  } else {
-    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
-  }
-
-  // 禁用系统右键菜单（仅Windows）
-  if (process.platform === "win32") {
-    try {
-      mainWindow.hookWindowMessage(278, () => {
-        mainWindow.setEnabled(false);
-        setTimeout(() => mainWindow.setEnabled(true), 100);
-        return true;
-      });
-    } catch (error) {
-      console.log("Failed to hook window message:", error);
-    }
-  }
 }
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId("com.vven.bongocat");
-
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on("browser-window-created", (_, window) => {
-    optimizer.watchWindowShortcuts(window);
-  });
-
-  createWindow();
-
-  app.on("activate", function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
-// Quit when all windows are closed, except on macOS.
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
 
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
