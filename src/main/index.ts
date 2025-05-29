@@ -161,8 +161,8 @@ function createTray(): void {
       },
       { type: "separator" },
       {
-        label: `键盘监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
-        type: 'checkbox',
+        label: `键盘监听: ${globalListenerActive ? "已启用" : "已禁用"}`,
+        type: "checkbox",
         checked: globalListenerActive,
         click: () => {
           globalListenerActive ? stopGlobalListener() : startGlobalListener();
@@ -227,7 +227,6 @@ function startGlobalListener(): void {
 
     // 更新托盘菜单
     updateTrayMenu();
-
   } catch (error) {
     console.error("❌ 启动键盘监听失败:", error);
   }
@@ -251,7 +250,6 @@ function stopGlobalListener(): void {
 
     // 更新托盘菜单
     updateTrayMenu();
-
   } catch (error) {
     console.error("❌ 停止键盘监听失败:", error);
   }
@@ -281,8 +279,8 @@ function updateTrayMenu(): void {
     },
     { type: "separator" },
     {
-      label: `键盘监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
-      type: 'checkbox',
+      label: `键盘监听: ${globalListenerActive ? "已启用" : "已禁用"}`,
+      type: "checkbox",
       checked: globalListenerActive,
       click: () => {
         globalListenerActive ? stopGlobalListener() : startGlobalListener();
