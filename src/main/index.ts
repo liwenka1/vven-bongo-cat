@@ -227,7 +227,9 @@ function createTray(): void {
 function startGlobalListener(): void {
   if (globalListenerActive) return;
 
-  console.log('🚀 启动全局键盘监听...');
+  if (is.dev) {
+    console.log('🚀 启动全局键盘监听...');
+  }
 
   try {
     // 注册常用键盘快捷键进行全局监听
@@ -256,13 +258,18 @@ function startGlobalListener(): void {
           }
         });
       } catch (error) {
-        // 某些键可能已被系统占用，忽略错误
-        console.warn(`无法注册全局快捷键: ${key}`, error);
+        // 某些键可能已被系统占用，仅在开发模式下显示警告
+        if (is.dev) {
+          console.warn(`无法注册全局快捷键: ${key}`, error);
+        }
       }
     });
 
     globalListenerActive = true;
-    console.log('✅ 全局键盘监听已启动');
+
+    if (is.dev) {
+      console.log('✅ 全局键盘监听已启动');
+    }
 
     // 更新托盘菜单
     updateTrayMenu();
@@ -276,17 +283,23 @@ function startGlobalListener(): void {
 function stopGlobalListener(): void {
   if (!globalListenerActive) return;
 
-  console.log("🛑 停止全局键盘监听...");
+  if (is.dev) {
+    console.log('🛑 停止全局键盘监听...');
+  }
 
   try {
     globalShortcut.unregisterAll();
     globalListenerActive = false;
-    console.log("✅ 全局键盘监听已停止");
+
+    if (is.dev) {
+      console.log('✅ 全局键盘监听已停止');
+    }
 
     // 更新托盘菜单
     updateTrayMenu();
+
   } catch (error) {
-    console.error("❌ 停止全局监听失败:", error);
+    console.error('❌ 停止全局监听失败:', error);
   }
 }
 
