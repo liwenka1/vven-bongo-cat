@@ -23,12 +23,19 @@ const catStore = useCatStore();
 
 const resizing = ref(false);
 
+// 拖拽相关状态
+const isDragging = ref(false);
+const dragStart = ref({ x: 0, y: 0 });
+const windowStart = ref({ x: 0, y: 0 });
+
 onMounted(() => {
   console.log("Main page mounted, setting up event listeners...");
   handleLoad();
 
   // Listen for menu actions
-  window.electron?.on("menu:action", (action: string, data?: unknown) => {
+  window.electron?.on("menu:action", (...args: unknown[]) => {
+    const action = args[0] as string;
+    const data = args[1] as unknown;
     handleMenuAction(action, data);
   });
 
@@ -53,6 +60,10 @@ onMounted(() => {
     },
     true
   );
+
+  // 添加全局鼠标移动和释放事件监听
+  document.addEventListener("mousemove", handleDragMove, true);
+  document.addEventListener("mouseup", handleDragEnd, true);
 });
 
 onUnmounted(() => {
@@ -60,6 +71,10 @@ onUnmounted(() => {
 
   // Clean up menu action listener
   window.electron?.off("menu:action", () => {});
+
+  // 清理全局事件监听器
+  document.removeEventListener("mousemove", handleDragMove, true);
+  document.removeEventListener("mouseup", handleDragEnd, true);
 });
 
 const handleDebounceResize = useDebounceFn(async () => {
@@ -83,10 +98,6 @@ watch(
   },
   { immediate: true }
 );
-
-function handleWindowDrag() {
-  window.electron?.startDragging?.();
-}
 
 function handleRightClick(event: MouseEvent) {
   event.preventDefault();
@@ -159,6 +170,61 @@ function handleMenuAction(action: string, data?: unknown) {
       console.warn("Unknown menu action:", action);
   }
 }
+
+// 拖拽功能实现
+async function handleWindowMouseDown(event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (event.button === 0) {
+    // 左键 - 开始拖拽
+    isDragging.value = true;
+    dragStart.value = { x: event.screenX, y: event.screenY };
+
+    // 获取当前窗口位置
+    try {
+      const position = await window.electron?.getWindowPosition?.();
+      if (position && Array.isArray(position)) {
+        windowStart.value = {
+          x: position[0],
+          y: position[1]
+        };
+      }
+    } catch (error) {
+      console.error("Failed to get window position:", error);
+    }
+  } else if (event.button === 2) {
+    // 右键 - 显示菜单
+    setTimeout(() => {
+      handleContextmenu(event);
+    }, 10);
+  }
+}
+
+function handleDragMove(event: MouseEvent) {
+  if (!isDragging.value) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const deltaX = event.screenX - dragStart.value.x;
+  const deltaY = event.screenY - dragStart.value.y;
+
+  const newX = windowStart.value.x + deltaX;
+  const newY = windowStart.value.y + deltaY;
+
+  // 移动窗口
+  window.electron?.setWindowPosition?.(newX, newY);
+}
+
+function handleDragEnd(event: MouseEvent) {
+  if (event.button !== 0) return; // 只处理左键
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  isDragging.value = false;
+}
 </script>
 
 <template>
@@ -170,19 +236,12 @@ function handleMenuAction(action: string, data?: unknown) {
     <!-- 背景图片 - 纯显示，不处理事件 -->
     <img :src="backgroundImagePath" class="pointer-events-none h-full w-full object-cover" />
 
-    <!-- 拖拽层 - 处理窗口拖拽 -->
+    <!-- 拖拽和交互层 - 统一处理所有鼠标事件 -->
     <div
       class="absolute inset-0 bg-transparent"
-      style="-webkit-app-region: drag; pointer-events: auto; z-index: 1"
-      @mousedown.left="handleWindowDrag"
-    ></div>
-
-    <!-- 右键检测层 - 处理右键事件 -->
-    <div
-      class="absolute inset-0 bg-transparent"
-      style="-webkit-app-region: no-drag; pointer-events: auto; z-index: 2"
+      style="pointer-events: auto; z-index: 1"
+      @mousedown="handleWindowMouseDown"
       @contextmenu.prevent.stop="handleContextmenu"
-      @mousedown.right.prevent.stop="handleRightClick"
     ></div>
 
     <!-- Live2D Canvas -->
