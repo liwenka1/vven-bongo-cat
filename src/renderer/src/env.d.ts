@@ -19,6 +19,7 @@ interface ElectronAPI {
   setWindowSize: (width: number, height: number) => Promise<void>;
   setWindowPosition: (x: number, y: number) => Promise<void>;
   getWindowSize: () => Promise<[number, number]>;
+  getWindowPosition: () => Promise<[number, number]>;
   getCursorMonitor: () => Promise<{
     name: string;
     size: { width: number; height: number };
@@ -26,6 +27,14 @@ interface ElectronAPI {
     scaleFactor: number;
     cursorPosition: { x: number; y: number };
   }>;
+
+  // Global listener control
+  global: {
+    startListener: () => Promise<boolean>;
+    stopListener: () => Promise<boolean>;
+    isListenerActive: () => Promise<boolean>;
+  };
+
   showContextMenu: (menuTemplate: MenuItemTemplate[]) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
   on: (channel: string, callback: (...args: unknown[]) => void) => void;

@@ -24,9 +24,17 @@ const api = {
   setWindowSize: (width: number, height: number) => ipcRenderer.invoke("window:setSize", { width, height }),
   setWindowPosition: (x: number, y: number) => ipcRenderer.invoke("window:setPosition", { x, y }),
   getWindowSize: () => ipcRenderer.invoke("window:getSize"),
+  getWindowPosition: () => ipcRenderer.invoke("window:getPosition"),
 
   // Monitor and cursor
   getCursorMonitor: () => ipcRenderer.invoke("screen:getCursorMonitor"),
+
+  // Global listener control
+  global: {
+    startListener: () => ipcRenderer.invoke("global:startListener"),
+    stopListener: () => ipcRenderer.invoke("global:stopListener"),
+    isListenerActive: () => ipcRenderer.invoke("global:isListenerActive")
+  },
 
   // Menu
   showContextMenu: (menuTemplate: MenuItemTemplate[]) => ipcRenderer.invoke("menu:showContextMenu", menuTemplate),
