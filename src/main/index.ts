@@ -13,56 +13,12 @@ let globalListenerActive = false;
 
 // 键盘映射 - 用于全局监听
 const keyMappings = [
-  "a",
-  "b",
-  "c",
-  "d",
-  "e",
-  "f",
-  "g",
-  "h",
-  "i",
-  "j",
-  "k",
-  "l",
-  "m",
-  "n",
-  "o",
-  "p",
-  "q",
-  "r",
-  "s",
-  "t",
-  "u",
-  "v",
-  "w",
-  "x",
-  "y",
-  "z",
-  "0",
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "space",
-  "enter",
-  "backspace",
-  "tab",
-  "escape",
-  "delete",
-  "left",
-  "right",
-  "up",
-  "down",
-  "shift",
-  "ctrl",
-  "alt",
-  "cmd"
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  'space', 'enter', 'backspace', 'tab', 'escape', 'delete',
+  'left', 'right', 'up', 'down'
+  // 移除修饰键：'shift', 'ctrl', 'alt', 'cmd' 因为不能单独注册
 ];
 
 function createWindow(): void {
@@ -271,47 +227,29 @@ function createTray(): void {
 function startGlobalListener(): void {
   if (globalListenerActive) return;
 
-  console.log("🚀 启动全局键盘监听...");
+  console.log('🚀 启动全局键盘监听...');
 
   try {
     // 注册常用键盘快捷键进行全局监听
-    keyMappings.forEach((key) => {
+    keyMappings.forEach(key => {
       try {
-        const accelerator =
-          key === "cmd"
-            ? "CommandOrControl"
-            : key === "ctrl"
-              ? "Control"
-              : key === "alt"
-                ? "Alt"
-                : key === "shift"
-                  ? "Shift"
-                  : key === "space"
-                    ? "Space"
-                    : key === "enter"
-                      ? "Return"
-                      : key === "backspace"
-                        ? "Backspace"
-                        : key === "tab"
-                          ? "Tab"
-                          : key === "escape"
-                            ? "Escape"
-                            : key === "delete"
-                              ? "Delete"
-                              : key === "left"
-                                ? "Left"
-                                : key === "right"
-                                  ? "Right"
-                                  : key === "up"
-                                    ? "Up"
-                                    : key === "down"
-                                      ? "Down"
-                                      : key;
+        // 简化键名映射
+        const accelerator = key === 'space' ? 'Space' :
+                          key === 'enter' ? 'Return' :
+                          key === 'backspace' ? 'Backspace' :
+                          key === 'tab' ? 'Tab' :
+                          key === 'escape' ? 'Escape' :
+                          key === 'delete' ? 'Delete' :
+                          key === 'left' ? 'Left' :
+                          key === 'right' ? 'Right' :
+                          key === 'up' ? 'Up' :
+                          key === 'down' ? 'Down' :
+                          key;
 
         globalShortcut.register(accelerator, () => {
           // 发送键盘事件到渲染进程
           if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send("global-key-press", {
+            mainWindow.webContents.send('global-key-press', {
               key: key,
               timestamp: Date.now()
             });
@@ -324,12 +262,13 @@ function startGlobalListener(): void {
     });
 
     globalListenerActive = true;
-    console.log("✅ 全局键盘监听已启动");
+    console.log('✅ 全局键盘监听已启动');
 
     // 更新托盘菜单
     updateTrayMenu();
+
   } catch (error) {
-    console.error("❌ 启动全局监听失败:", error);
+    console.error('❌ 启动全局监听失败:', error);
   }
 }
 

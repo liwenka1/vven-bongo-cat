@@ -61,12 +61,16 @@ const keyMap: Record<string, string> = {
   z: "KeyZ",
   " ": "Space",
   space: "Space",
+  // 修饰键映射（仅用于窗口内监听）
   Control: "Control",
   ctrl: "Control",
   Alt: "Alt",
   alt: "Alt",
   Shift: "Shift",
   shift: "Shift",
+  Meta: "Meta",
+  cmd: "Meta",
+  // 功能键映射
   Enter: "Return",
   enter: "Return",
   Backspace: "Backspace",
