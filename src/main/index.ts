@@ -13,12 +13,56 @@ let globalListenerActive = false;
 
 // 键盘映射 - 用于全局监听
 const keyMappings = [
-  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-  'space', 'enter', 'backspace', 'tab', 'escape', 'delete',
-  'left', 'right', 'up', 'down',
-  'shift', 'ctrl', 'alt', 'cmd'
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "f",
+  "g",
+  "h",
+  "i",
+  "j",
+  "k",
+  "l",
+  "m",
+  "n",
+  "o",
+  "p",
+  "q",
+  "r",
+  "s",
+  "t",
+  "u",
+  "v",
+  "w",
+  "x",
+  "y",
+  "z",
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "space",
+  "enter",
+  "backspace",
+  "tab",
+  "escape",
+  "delete",
+  "left",
+  "right",
+  "up",
+  "down",
+  "shift",
+  "ctrl",
+  "alt",
+  "cmd"
 ];
 
 function createWindow(): void {
@@ -45,7 +89,7 @@ function createWindow(): void {
     hasShadow: false, // 无阴影，更透明
 
     // 平台特殊配置
-    type: process.platform === 'darwin' ? 'panel' : undefined,
+    type: process.platform === "darwin" ? "panel" : undefined,
 
     icon,
     webPreferences: {
@@ -59,11 +103,11 @@ function createWindow(): void {
   });
 
   // 平台特殊处理
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     // Windows: 设置为桌面层窗口
-    mainWindow.setAlwaysOnTop(true, 'screen-saver');
+    mainWindow.setAlwaysOnTop(true, "screen-saver");
     mainWindow.setSkipTaskbar(true);
-  } else if (process.platform === 'linux') {
+  } else if (process.platform === "linux") {
     // Linux: 设置在所有工作区可见
     mainWindow.setVisibleOnAllWorkspaces(true);
   }
@@ -77,13 +121,13 @@ function createWindow(): void {
   });
 
   // 防止窗口意外获取焦点
-  mainWindow.on('focus', () => {
+  mainWindow.on("focus", () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.blur();
     }
   });
 
-  mainWindow.on('show', () => {
+  mainWindow.on("show", () => {
     if (mainWindow) {
       mainWindow.setSkipTaskbar(true);
       mainWindow.blur();
@@ -91,17 +135,17 @@ function createWindow(): void {
   });
 
   // 窗口关闭处理 - 隐藏而不是真正关闭
-  mainWindow.on('close', (event) => {
+  mainWindow.on("close", (event) => {
     if (!isQuiting) {
       event.preventDefault();
       mainWindow?.hide();
 
       // 显示托盘提示
-      if (tray && process.platform === 'win32') {
+      if (tray && process.platform === "win32") {
         tray.displayBalloon({
-          iconType: 'info',
-          title: 'Bongo Cat',
-          content: '应用已最小化到系统托盘，继续在后台运行'
+          iconType: "info",
+          title: "Bongo Cat",
+          content: "应用已最小化到系统托盘，继续在后台运行"
         });
       }
     }
@@ -159,7 +203,7 @@ function createTray(): void {
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '显示窗口',
+        label: "显示窗口",
         click: () => {
           if (mainWindow) {
             mainWindow.show();
@@ -168,38 +212,38 @@ function createTray(): void {
         }
       },
       {
-        label: '隐藏窗口',
+        label: "隐藏窗口",
         click: () => {
           if (mainWindow) {
             mainWindow.hide();
           }
         }
       },
-      { type: 'separator' },
+      { type: "separator" },
       {
-        label: `全局监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
-        type: 'checkbox',
+        label: `全局监听: ${globalListenerActive ? "已启用" : "已禁用"}`,
+        type: "checkbox",
         checked: globalListenerActive,
         click: () => {
           globalListenerActive ? stopGlobalListener() : startGlobalListener();
         }
       },
-      { type: 'separator' },
+      { type: "separator" },
       {
-        label: '开机自启动',
-        type: 'checkbox',
+        label: "开机自启动",
+        type: "checkbox",
         checked: app.getLoginItemSettings().openAtLogin,
         click: () => {
           const { openAtLogin } = app.getLoginItemSettings();
           app.setLoginItemSettings({
             openAtLogin: !openAtLogin,
-            path: app.getPath('exe')
+            path: app.getPath("exe")
           });
         }
       },
-      { type: 'separator' },
+      { type: "separator" },
       {
-        label: '退出',
+        label: "退出",
         click: () => {
           isQuiting = true;
           app.quit();
@@ -207,11 +251,11 @@ function createTray(): void {
       }
     ]);
 
-    tray.setToolTip('Bongo Cat - 后台运行中');
+    tray.setToolTip("Bongo Cat - 后台运行中");
     tray.setContextMenu(contextMenu);
 
     // 托盘图标点击显示/隐藏窗口
-    tray.on('click', () => {
+    tray.on("click", () => {
       if (mainWindow) {
         if (mainWindow.isVisible()) {
           mainWindow.hide();
@@ -227,32 +271,47 @@ function createTray(): void {
 function startGlobalListener(): void {
   if (globalListenerActive) return;
 
-  console.log('🚀 启动全局键盘监听...');
+  console.log("🚀 启动全局键盘监听...");
 
   try {
     // 注册常用键盘快捷键进行全局监听
-    keyMappings.forEach(key => {
+    keyMappings.forEach((key) => {
       try {
-        const accelerator = key === 'cmd' ? 'CommandOrControl' :
-                          key === 'ctrl' ? 'Control' :
-                          key === 'alt' ? 'Alt' :
-                          key === 'shift' ? 'Shift' :
-                          key === 'space' ? 'Space' :
-                          key === 'enter' ? 'Return' :
-                          key === 'backspace' ? 'Backspace' :
-                          key === 'tab' ? 'Tab' :
-                          key === 'escape' ? 'Escape' :
-                          key === 'delete' ? 'Delete' :
-                          key === 'left' ? 'Left' :
-                          key === 'right' ? 'Right' :
-                          key === 'up' ? 'Up' :
-                          key === 'down' ? 'Down' :
-                          key;
+        const accelerator =
+          key === "cmd"
+            ? "CommandOrControl"
+            : key === "ctrl"
+              ? "Control"
+              : key === "alt"
+                ? "Alt"
+                : key === "shift"
+                  ? "Shift"
+                  : key === "space"
+                    ? "Space"
+                    : key === "enter"
+                      ? "Return"
+                      : key === "backspace"
+                        ? "Backspace"
+                        : key === "tab"
+                          ? "Tab"
+                          : key === "escape"
+                            ? "Escape"
+                            : key === "delete"
+                              ? "Delete"
+                              : key === "left"
+                                ? "Left"
+                                : key === "right"
+                                  ? "Right"
+                                  : key === "up"
+                                    ? "Up"
+                                    : key === "down"
+                                      ? "Down"
+                                      : key;
 
         globalShortcut.register(accelerator, () => {
           // 发送键盘事件到渲染进程
           if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('global-key-press', {
+            mainWindow.webContents.send("global-key-press", {
               key: key,
               timestamp: Date.now()
             });
@@ -265,13 +324,12 @@ function startGlobalListener(): void {
     });
 
     globalListenerActive = true;
-    console.log('✅ 全局键盘监听已启动');
+    console.log("✅ 全局键盘监听已启动");
 
     // 更新托盘菜单
     updateTrayMenu();
-
   } catch (error) {
-    console.error('❌ 启动全局监听失败:', error);
+    console.error("❌ 启动全局监听失败:", error);
   }
 }
 
@@ -279,18 +337,17 @@ function startGlobalListener(): void {
 function stopGlobalListener(): void {
   if (!globalListenerActive) return;
 
-  console.log('🛑 停止全局键盘监听...');
+  console.log("🛑 停止全局键盘监听...");
 
   try {
     globalShortcut.unregisterAll();
     globalListenerActive = false;
-    console.log('✅ 全局键盘监听已停止');
+    console.log("✅ 全局键盘监听已停止");
 
     // 更新托盘菜单
     updateTrayMenu();
-
   } catch (error) {
-    console.error('❌ 停止全局监听失败:', error);
+    console.error("❌ 停止全局监听失败:", error);
   }
 }
 
@@ -300,7 +357,7 @@ function updateTrayMenu(): void {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '显示窗口',
+      label: "显示窗口",
       click: () => {
         if (mainWindow) {
           mainWindow.show();
@@ -308,38 +365,38 @@ function updateTrayMenu(): void {
       }
     },
     {
-      label: '隐藏窗口',
+      label: "隐藏窗口",
       click: () => {
         if (mainWindow) {
           mainWindow.hide();
         }
       }
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: `全局监听: ${globalListenerActive ? '已启用' : '已禁用'}`,
-      type: 'checkbox',
+      label: `全局监听: ${globalListenerActive ? "已启用" : "已禁用"}`,
+      type: "checkbox",
       checked: globalListenerActive,
       click: () => {
         globalListenerActive ? stopGlobalListener() : startGlobalListener();
       }
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: '开机自启动',
-      type: 'checkbox',
+      label: "开机自启动",
+      type: "checkbox",
       checked: app.getLoginItemSettings().openAtLogin,
       click: () => {
         const { openAtLogin } = app.getLoginItemSettings();
         app.setLoginItemSettings({
           openAtLogin: !openAtLogin,
-          path: app.getPath('exe')
+          path: app.getPath("exe")
         });
       }
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: '退出',
+      label: "退出",
       click: () => {
         isQuiting = true;
         app.quit();
@@ -384,11 +441,11 @@ app.whenReady().then(() => {
 });
 
 // 防止应用意外退出 - 后台持续运行
-app.on('window-all-closed', (event) => {
+app.on("window-all-closed", (event) => {
   // 阻止默认关闭行为，保持后台运行
   event.preventDefault();
 
-  if (process.platform !== 'darwin') {
+  if (process.platform !== "darwin") {
     // Windows/Linux: 隐藏窗口但保持应用运行
     if (mainWindow) {
       mainWindow.hide();
@@ -397,7 +454,7 @@ app.on('window-all-closed', (event) => {
 });
 
 // 应用真正退出前的清理
-app.on('before-quit', (event) => {
+app.on("before-quit", (event) => {
   if (!isQuiting) {
     event.preventDefault();
     return;

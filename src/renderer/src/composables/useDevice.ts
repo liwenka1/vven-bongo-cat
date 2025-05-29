@@ -226,7 +226,7 @@ export function useDevice() {
     checkGlobalListenerStatus();
 
     // 监听全局键盘事件
-    window.electron?.on?.('global-key-press', (...args: unknown[]) => {
+    window.electron?.on?.("global-key-press", (...args: unknown[]) => {
       const event = args[0] as GlobalKeyEvent;
       handleGlobalKeyPress(event);
     });
@@ -234,7 +234,7 @@ export function useDevice() {
 
   onUnmounted(() => {
     // 清理全局事件监听
-    window.electron?.off?.('global-key-press', (...args: unknown[]) => {
+    window.electron?.off?.("global-key-press", (...args: unknown[]) => {
       const event = args[0] as GlobalKeyEvent;
       handleGlobalKeyPress(event);
     });
